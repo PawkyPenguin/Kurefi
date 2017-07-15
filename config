@@ -1,5 +1,4 @@
-ctrl + shift + a
-	echo hi
-
-shift + ctrl + b
-	echo hi
+ctrl + shift + a:echo hi
+awa: echo hi
+w:echo hey
+shift + ctrl + b:echo hi
