@@ -9,6 +9,8 @@
 #include <sys/un.h>
 #include <err.h>
 
+// create a new window. This is somewhat temporary and only needed because I don't want to capture the root window
+// with a buggy keydaemon
 void setup(xcb_connection_t *connection) {
 	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
 	xcb_window_t window = xcb_generate_id(connection);
@@ -31,6 +33,7 @@ void setup(xcb_connection_t *connection) {
         xcb_flush (connection);
 }
 
+// returns socket filedescriptor for local SEQPACKET socket
 int connect_socket() {
 	int sock_fd;
 	if (!(sock_fd = socket(AF_LOCAL, SOCK_SEQPACKET, 0)))
@@ -76,17 +79,26 @@ int main(){
 				 */
 				XKeyEvent e = {press->response_type, 0, False, dpy, press->event, press->root, press->child, press->time, 0, 0, 0, 0, 0 /*(unsigned int) press->state*/, (unsigned int) press->detail, (Bool) press->same_screen};
 				byte_amount = XLookupString(&e, str, 256, &ks, NULL);
+				// if we get 0 bytes back it means we've only pressed Shift or similar, so don't do anything
+				if (byte_amount == 0)
+					break;
 
-				if(ks == NoSymbol)
-					ksname = "NoSymbol";
+				// If keysymbol is unknown, there's no point sending anything
+				if(ks == NoSymbol) {
+					//ksname = "NoSymbol";
+					break;
+				}
 				else {
-					if (!(ksname = XKeysymToString(ks)))
-						ksname = "(no name)";
+					if (!(ksname = XKeysymToString(ks))) {
+						break;
+						//ksname = "(no name)";
+					}
 					kc = XKeysymToKeycode(dpy, ks);
 				}
-				//printf("keysym 0x%lx, %s. Modifiers: %d\n", (unsigned long) ks, ksname, press->state);
+				printf("keysym 0x%lx, %s. Modifiers: %d\n", (unsigned long) ks, ksname, press->state);
 				char *c;
 				int size;
+				// get string size and create our keystroke string to send to server
 				if (-1 == (size = asprintf(&c, "_%s:%d \0", ksname, press->state))) {
 					err(EXIT_FAILURE, "Allocating memory for string failed");
 				}

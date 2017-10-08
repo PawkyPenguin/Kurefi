@@ -8,6 +8,7 @@
 #include <err.h>
 #include <stdlib.h>
 
+// Used to send a custom event to the keydaemon's socket
 int main(int argc, char *argv[]){
 	int sock_fd;
 	int option;
@@ -25,16 +26,19 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	// open socket file descriptor
 	if (!(sock_fd = socket(AF_LOCAL, SOCK_SEQPACKET, 0)))
 		err(EXIT_FAILURE, "Could not create socket");
 	struct sockaddr_un addr;
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_LOCAL;
 	strncpy(addr.sun_path, "asdf", sizeof(addr.sun_path) - 1);
+	// connect to socket
 	if(connect(sock_fd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_un)) < 0)
 		err(EXIT_FAILURE, "Could not connect to socket.");
 	char *c;
 	int size;
+	// send all arguments through the socket. If the -k flag was passed, pretend that a keypress is being sent.
 	for (int i=optind; i < argc; i++) {
 		if (as_key) {
 			if (-1 == (size = asprintf(&c, "_%s ", argv[i]))) {

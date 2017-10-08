@@ -1,4 +1,3 @@
 *.swp
 *.exe
 *.o
-__pycache__/*
